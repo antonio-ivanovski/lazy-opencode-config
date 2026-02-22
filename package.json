@@ -1,7 +1,8 @@
 {
-	"name": "lazy-opencode-config",
-	"version": "0.0.0",
+	"name": "@antonio-ivanovski/lazy-opencode-config",
+	"version": "0.0.0-alpha.1",
 	"license": "MIT",
+	"repository": "https://github.com/antonio-ivanovski/lazy-opencode-config",
 	"bin": {
 		"lazy-opencode-config": "dist/cli.js"
 	},
@@ -17,6 +18,10 @@
 	"files": [
 		"dist"
 	],
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com",
+		"access": "public"
+	},
 	"dependencies": {
 		"ajv": "^8.17.1",
 		"chalk": "^5.2.0",
