@@ -1,6 +1,6 @@
 {
 	"name": "lazy-opencode-config",
-	"version": "0.0.0-alpha.1",
+	"version": "0.0.0-beta.1",
 	"license": "MIT",
 	"repository": "https://github.com/antonio-ivanovski/lazy-opencode-config",
 	"bin": {
