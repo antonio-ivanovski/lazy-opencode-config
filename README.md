@@ -1,5 +1,7 @@
 # lazy-opencode-config
 
+[![npm version](https://img.shields.io/npm/v/lazy-opencode-config.svg?style=flat-square)](https://www.npmjs.com/package/lazy-opencode-config)
+
 A CLI + interactive TUI for managing your [opencode](https://opencode.ai) configuration.
 
 ![screenshtot of lazy-opencode-config](./screenshot.webp)
