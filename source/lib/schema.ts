@@ -147,55 +147,7 @@ function resolveRef(ref: string, rootSchema: any): any {
 	return current;
 }
 
-function parseNode(raw: any, rootSchema: any): SchemaNode {
-	if (!raw || typeof raw !== 'object') {
-		return {type: 'string'};
-	}
-
-	// Resolve $ref
-	if (raw.$ref) {
-		const resolved = resolveRef(raw.$ref, rootSchema);
-		return parseNode(resolved ?? {}, rootSchema);
-	}
-
-	// Handle anyOf / oneOf unions
-	const union = raw.anyOf ?? raw.oneOf;
-	if (union && Array.isArray(union)) {
-		const enumValues: string[] = [];
-		let hasBoolean = false;
-		let hasString = false;
-		let hasNumber = false;
-
-		for (const variant of union) {
-			const resolved = variant.$ref
-				? resolveRef(variant.$ref, rootSchema) ?? variant
-				: variant;
-			if (resolved.type === 'boolean') hasBoolean = true;
-			else if (resolved.type === 'string') {
-				hasString = true;
-				if (Array.isArray(resolved.enum)) {
-					for (const v of resolved.enum) {
-						if (typeof v === 'string') enumValues.push(v);
-					}
-				}
-			} else if (resolved.type === 'number' || resolved.type === 'integer') {
-				hasNumber = true;
-			}
-		}
-
-		const node: SchemaNode = {
-			type: 'mixed',
-			description: raw.description,
-			default: raw.default,
-		};
-		if (enumValues.length > 0 || hasBoolean || hasString || hasNumber) {
-			if (hasBoolean) enumValues.unshift('true', 'false');
-			if (enumValues.length > 0) node.enumValues = enumValues;
-		}
-
-		return node;
-	}
-
+function parseNodeRaw(raw: any, rootSchema: any): SchemaNode {
 	// Determine type
 	let type: SchemaNode['type'] = 'string';
 	if (raw.type === 'object') type = 'object';
@@ -204,6 +156,8 @@ function parseNode(raw: any, rootSchema: any): SchemaNode {
 	else if (raw.type === 'number' || raw.type === 'integer') type = 'number';
 	else if (raw.type === 'string') type = 'string';
 	else if (Array.isArray(raw.enum)) type = 'enum';
+	// Handle const as single-value enum
+	else if (raw.const !== undefined) type = 'enum';
 
 	const node: SchemaNode = {
 		type,
@@ -214,9 +168,25 @@ function parseNode(raw: any, rootSchema: any): SchemaNode {
 		maximum: raw.maximum,
 	};
 
+	// Handle exclusiveMinimum
+	if (raw.exclusiveMinimum !== undefined) {
+		node.minimum =
+			raw.exclusiveMinimum +
+			(Number.isInteger(raw.exclusiveMinimum) ? 1 : 0.001);
+	}
+
+	// Handle pattern
+	if (raw.pattern !== undefined) {
+		node.pattern = raw.pattern;
+	}
+
+	// Handle enum / const
 	if (Array.isArray(raw.enum)) {
 		node.type = 'enum';
 		node.enumValues = raw.enum.filter((v: unknown) => typeof v === 'string');
+	} else if (raw.const !== undefined) {
+		node.type = 'enum';
+		node.enumValues = [String(raw.const)];
 	}
 
 	if (raw['x-deprecated'] || raw.deprecated) {
@@ -250,6 +220,121 @@ function parseNode(raw: any, rootSchema: any): SchemaNode {
 	}
 
 	return node;
+}
+
+function parseNode(raw: any, rootSchema: any): SchemaNode {
+	if (!raw || typeof raw !== 'object') {
+		return {type: 'string'};
+	}
+
+	// Resolve $ref
+	if (raw.$ref) {
+		const resolved = resolveRef(raw.$ref, rootSchema);
+		return parseNode(resolved ?? {}, rootSchema);
+	}
+
+	// Handle anyOf / oneOf unions
+	const union = raw.anyOf ?? raw.oneOf;
+	if (union && Array.isArray(union)) {
+		// Resolve all variants
+		const resolved = union.map((v: any) =>
+			v.$ref ? resolveRef(v.$ref, rootSchema) ?? v : v,
+		);
+
+		const objectVariants = resolved.filter(
+			(v: any) => v.type === 'object' || v.properties !== undefined,
+		);
+		const scalarVariants = resolved.filter(
+			(v: any) => v.type !== 'object' && v.properties === undefined,
+		);
+
+		// Collect enum values and scalar type info from scalar variants
+		const enumValues: string[] = [];
+		let hasBoolean = false;
+		let patternValue: string | undefined;
+
+		for (const v of scalarVariants) {
+			if (v.type === 'boolean') hasBoolean = true;
+			else if (v.type === 'string') {
+				if (Array.isArray(v.enum)) {
+					for (const e of v.enum) {
+						if (typeof e === 'string') enumValues.push(e);
+					}
+				}
+				if (v.pattern) patternValue = v.pattern;
+			}
+		}
+
+		if (hasBoolean) {
+			enumValues.unshift('true', 'false');
+		}
+
+		// All-scalar union — keep simple mixed behavior
+		if (objectVariants.length === 0) {
+			const node: SchemaNode = {
+				type: 'mixed',
+				description: raw.description,
+				default: raw.default,
+			};
+			if (enumValues.length > 0) node.enumValues = enumValues;
+			if (patternValue) node.pattern = patternValue;
+			return node;
+		}
+
+		// Union contains object variants — build parsed variants
+		const parsedVariants: SchemaNode[] = resolved.map((v: any) =>
+			parseNodeRaw(v, rootSchema),
+		);
+
+		// Merge all properties from all object variants
+		const mergedProperties: Record<string, SchemaNode> = {};
+		for (const v of objectVariants) {
+			if (v.properties && typeof v.properties === 'object') {
+				for (const [k, val] of Object.entries(v.properties)) {
+					mergedProperties[k] = parseNode(val, rootSchema);
+				}
+			}
+		}
+
+		// Determine best type
+		let type: SchemaNode['type'] = 'object';
+		if (objectVariants.length >= 1 && scalarVariants.length >= 1) {
+			// Mixed: has both object and scalar variants (e.g. Permission pattern)
+			type = 'mixed';
+		}
+
+		const node: SchemaNode = {
+			type,
+			description: raw.description,
+			default: raw.default,
+			anyOfVariants: parsedVariants,
+		};
+
+		if (Object.keys(mergedProperties).length > 0) {
+			node.properties = mergedProperties;
+		}
+
+		// Also capture additionalProperties from object variants
+		for (const v of objectVariants) {
+			if (v.additionalProperties !== undefined && !node.additionalProperties) {
+				if (typeof v.additionalProperties === 'boolean') {
+					node.additionalProperties = v.additionalProperties;
+				} else {
+					node.additionalProperties = parseNode(
+						v.additionalProperties,
+						rootSchema,
+					);
+				}
+			}
+		}
+
+		if (enumValues.length > 0) node.enumValues = enumValues;
+		if (patternValue) node.pattern = patternValue;
+
+		return node;
+	}
+
+	return parseNodeRaw(raw, rootSchema);
 }
 
 export function parseSchema(rawSchema: any): Record<string, SchemaNode> {

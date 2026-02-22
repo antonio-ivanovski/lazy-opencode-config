@@ -11,4 +11,8 @@ export type SchemaNode = {
 	additionalProperties?: SchemaNode | boolean;
 	items?: SchemaNode;
 	format?: string;
+	// For anyOf/oneOf unions that contain object variants
+	anyOfVariants?: SchemaNode[];
+	// For pattern-validated strings (like hex color)
+	pattern?: string;
 };

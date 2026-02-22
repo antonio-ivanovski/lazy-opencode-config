@@ -12,8 +12,17 @@ type Props = {
 export default function DetailsPanel({focusedNode, validationErrors}: Props) {
 	if (!focusedNode) {
 		return (
-			<Box flexDirection="column" paddingX={1}>
-				<Text dimColor>No node selected</Text>
+			<Box
+				flexDirection="column"
+				paddingX={2}
+				paddingY={1}
+				borderStyle="round"
+				borderColor="gray"
+			>
+				<Text dimColor>Navigate the tree to view property details</Text>
+				<Text> </Text>
+				<Text dimColor>Use ↑↓ or j/k to move</Text>
+				<Text dimColor>Press ? for help</Text>
 			</Box>
 		);
 	}
@@ -34,43 +43,84 @@ export default function DetailsPanel({focusedNode, validationErrors}: Props) {
 		return String(val);
 	};
 
-	return (
-		<Box flexDirection="column" paddingX={1}>
-			{/* Property name */}
-			<Text bold>{node.key}</Text>
-			<Text dimColor>{node.path}</Text>
-			<Text> </Text>
+	const sourceLabel = node.isSet
+		? 'Set locally'
+		: node.inheritedFrom === 'global'
+		? 'Inherited from global'
+		: node.inheritedFrom === 'default'
+		? 'Schema default'
+		: 'Not set';
 
-			{/* Type */}
-			<Text>
-				<Text dimColor>Type: </Text>
-				<Text>{typeDisplay}</Text>
+	const sourceColor = node.isSet
+		? '#4CAF50'
+		: node.inheritedFrom === 'global'
+		? '#00BCD4'
+		: 'gray';
+
+	return (
+		<Box
+			flexDirection="column"
+			paddingX={2}
+			paddingY={1}
+			borderStyle="round"
+			borderColor="#00BCD4"
+		>
+			{/* Property name in title */}
+			<Text bold color="#00BCD4">
+				{node.key}
 			</Text>
+			<Text> </Text>
 
 			{/* Description */}
 			{node.schema.description && (
 				<>
+					<Text wrap="wrap" dimColor>
+						{node.schema.description}
+					</Text>
 					<Text> </Text>
-					<Text wrap="wrap">{node.schema.description}</Text>
 				</>
 			)}
-			<Text> </Text>
 
-			{/* Current value */}
-			<Text>
-				<Text dimColor>Current: </Text>
-				<Text color={node.isSet ? undefined : 'gray'}>
-					{formatValue(node.value)}
-				</Text>
-			</Text>
-
-			{/* Default value */}
-			{node.defaultValue !== undefined && (
-				<Text>
-					<Text dimColor>Default: </Text>
-					<Text>{String(node.defaultValue)}</Text>
-				</Text>
-			)}
+			{/* Metadata table */}
+			<Box flexDirection="column">
+				<Box>
+					<Box width={12}>
+						<Text dimColor>Type</Text>
+					</Box>
+					<Text>{typeDisplay}</Text>
+				</Box>
+				<Box>
+					<Box width={12}>
+						<Text dimColor>Current</Text>
+					</Box>
+					<Text bold color={node.isSet ? '#00BCD4' : 'gray'}>
+						{formatValue(node.value)}
+					</Text>
+				</Box>
+				{node.defaultValue !== undefined && (
+					<Box>
+						<Box width={12}>
+							<Text dimColor>Default</Text>
+						</Box>
+						<Text dimColor>{String(node.defaultValue)}</Text>
+					</Box>
+				)}
+				<Box>
+					<Box width={12}>
+						<Text dimColor>Source</Text>
+					</Box>
+					<Text color={sourceColor}>{sourceLabel}</Text>
+				</Box>
+				{node.effectiveValue !== undefined &&
+					node.effectiveValue !== node.value && (
+						<Box>
+							<Box width={12}>
+								<Text dimColor>Effective</Text>
+							</Box>
+							<Text>{formatValue(node.effectiveValue)}</Text>
+						</Box>
+					)}
+			</Box>
 
 			{/* Enum values */}
 			{node.schema.enumValues && node.schema.enumValues.length > 0 && (
@@ -78,10 +128,12 @@ export default function DetailsPanel({focusedNode, validationErrors}: Props) {
 					<Text> </Text>
 					<Text dimColor>Allowed values:</Text>
 					{node.schema.enumValues.map(v => (
-						<Text key={v}>
-							<Text> {v === String(node.value) ? '● ' : '  '}</Text>
+						<Box key={v}>
+							<Text color={v === String(node.value) ? '#00BCD4' : 'gray'}>
+								{v === String(node.value) ? '● ' : '  '}
+							</Text>
 							<Text bold={v === String(node.value)}>{v}</Text>
-						</Text>
+						</Box>
 					))}
 				</>
 			)}
@@ -89,51 +141,46 @@ export default function DetailsPanel({focusedNode, validationErrors}: Props) {
 			{/* Min/Max */}
 			{(node.schema.minimum !== undefined ||
 				node.schema.maximum !== undefined) && (
-				<Text>
-					<Text dimColor>Range: </Text>
-					<Text>
-						{node.schema.minimum ?? '...'} – {node.schema.maximum ?? '...'}
-					</Text>
-				</Text>
+				<>
+					<Text> </Text>
+					<Box>
+						<Box width={12}>
+							<Text dimColor>Range</Text>
+						</Box>
+						<Text>
+							{node.schema.minimum ?? '...'} – {node.schema.maximum ?? '...'}
+						</Text>
+					</Box>
+				</>
 			)}
 
 			{/* Deprecated */}
 			{node.deprecated && (
 				<>
 					<Text> </Text>
-					<Text color="yellow">⚠ Deprecated</Text>
+					<Text color="#FF9800">⚠ Deprecated</Text>
 					{node.deprecatedMessage && (
-						<Text color="yellow"> {node.deprecatedMessage}</Text>
+						<Text dimColor> {node.deprecatedMessage}</Text>
 					)}
 				</>
 			)}
 
-			{/* Validation */}
-			{(nodeErrors.length > 0 || nodeWarnings.length > 0) && (
-				<>
-					<Text> </Text>
-					<Text dimColor>── Validation ──</Text>
-					{nodeErrors.map(e => (
-						<Text key={e.path + e.message} color="red">
-							✗ {e.message}
-						</Text>
-					))}
-					{nodeWarnings.map(e => (
-						<Text key={e.path + e.message} color="yellow">
-							⚠ {e.message}
-						</Text>
-					))}
-				</>
-			)}
-
-			{/* Valid indicator */}
+			{/* Validation section */}
+			<Text> </Text>
+			<Text dimColor>────── Validation ──────</Text>
 			{nodeErrors.length === 0 && nodeWarnings.length === 0 && (
-				<>
-					<Text> </Text>
-					<Text dimColor>── Validation ──</Text>
-					<Text color="green">✓ Valid</Text>
-				</>
+				<Text color="#4CAF50">✓ Valid</Text>
 			)}
+			{nodeErrors.map(e => (
+				<Text key={e.path + e.message} color="#F44336">
+					✗ {e.message}
+				</Text>
+			))}
+			{nodeWarnings.map(e => (
+				<Text key={e.path + e.message} color="#FF9800">
+					⚠ {e.message}
+				</Text>
+			))}
 		</Box>
 	);
 }

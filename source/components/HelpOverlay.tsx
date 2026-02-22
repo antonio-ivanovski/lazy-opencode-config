@@ -56,30 +56,34 @@ export default function HelpOverlay({onClose}: Props) {
 		<Box
 			flexDirection="column"
 			borderStyle="round"
-			borderColor="cyan"
-			paddingX={2}
+			borderColor="#00BCD4"
+			paddingX={3}
 			paddingY={1}
 		>
-			<Text bold color="cyan">
-				Keyboard Shortcuts
+			<Text bold color="#00BCD4">
+				⌨ Keyboard Shortcuts
 			</Text>
 			<Text> </Text>
-			{HELP_SECTIONS.map(section => (
-				<Box key={section.title} flexDirection="column" marginBottom={1}>
-					<Text bold underline>
+			{HELP_SECTIONS.map((section, idx) => (
+				<Box key={section.title} flexDirection="column">
+					<Text bold color="white">
 						{section.title}
 					</Text>
 					{section.binds.map(([key, desc]) => (
 						<Box key={key}>
-							<Box width={20}>
-								<Text color="green">{key}</Text>
+							<Box width={22}>
+								<Text color="#00BCD4">{key}</Text>
 							</Box>
-							<Text>{desc}</Text>
+							<Text dimColor>{desc}</Text>
 						</Box>
 					))}
+					{idx < HELP_SECTIONS.length - 1 && <Text> </Text>}
 				</Box>
 			))}
-			<Text dimColor>Press Esc or ? to close</Text>
+			<Text> </Text>
+			<Text dimColor color="gray">
+				Press Esc or ? to close
+			</Text>
 		</Box>
 	);
 }

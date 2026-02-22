@@ -14,4 +14,7 @@ export type TreeNode = {
 	deprecated?: boolean;
 	deprecatedMessage?: string;
 	unknown?: boolean;
+	inheritedValue?: unknown;
+	inheritedFrom?: 'global' | 'default';
+	effectiveValue?: unknown;
 };

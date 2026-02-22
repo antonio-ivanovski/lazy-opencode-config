@@ -47,40 +47,59 @@ export default function SearchOverlay({allNodes, onSelect, onCancel}: Props) {
 		<Box
 			flexDirection="column"
 			borderStyle="round"
-			borderColor="cyan"
-			paddingX={1}
+			borderColor="#00BCD4"
+			paddingX={2}
+			paddingY={1}
 		>
 			<Box>
-				<Text color="cyan">/ </Text>
-				<TextInput value={query} onChange={setQuery} />
+				<Text color="#00BCD4" bold>
+					🔍{' '}
+				</Text>
+				<TextInput value={query} onChange={setQuery} placeholder="Search..." />
 			</Box>
 			{results.length > 0 && (
 				<Box flexDirection="column" marginTop={1}>
 					{results.map((node, i) => (
-						<Text key={node.id}>
-							{i === selectedIndex ? (
-								<Text color="cyan">{'> '}</Text>
-							) : (
-								<Text>{'  '}</Text>
-							)}
-							<Text bold={i === selectedIndex}>{node.path}</Text>
-							{node.schema.description && (
-								<Text dimColor>
-									{' — '}
-									{node.schema.description.slice(0, 40)}
+						<Box key={node.id} flexDirection="column">
+							<Box>
+								{i === selectedIndex ? (
+									<Text color="#00BCD4" bold>
+										▶{' '}
+									</Text>
+								) : (
+									<Text> </Text>
+								)}
+								<Text
+									bold={i === selectedIndex}
+									color={i === selectedIndex ? '#00BCD4' : 'white'}
+								>
+									{node.path}
 								</Text>
+							</Box>
+							{node.schema.description && (
+								<Box marginLeft={2}>
+									<Text dimColor>
+										{node.schema.description.length > 60
+											? node.schema.description.slice(0, 57) + '...'
+											: node.schema.description}
+									</Text>
+								</Box>
 							)}
-						</Text>
+						</Box>
 					))}
 				</Box>
 			)}
 			{query && results.length === 0 && (
 				<Box marginTop={1}>
-					<Text dimColor>No results</Text>
+					<Text dimColor>No results found</Text>
 				</Box>
 			)}
-			<Box marginTop={1}>
-				<Text dimColor>Enter jump Esc cancel ↑↓ navigate</Text>
+			<Box marginTop={1} borderTop borderColor="gray">
+				<Text dimColor>
+					<Text color="#00BCD4">⏎</Text> jump <Text color="gray">│</Text>{' '}
+					<Text color="#00BCD4">Esc</Text> cancel <Text color="gray">│</Text>{' '}
+					<Text color="#00BCD4">↑↓</Text> navigate
+				</Text>
 			</Box>
 		</Box>
 	);

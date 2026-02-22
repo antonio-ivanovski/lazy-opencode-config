@@ -29,6 +29,28 @@ export default function ArrayRenderer({
 			setSelectedIndex(i => Math.min(items.length - 1, i + 1));
 		}
 
+		// Move up (Shift+K)
+		if (input === 'K' && selectedIndex > 0) {
+			const newItems = [...items];
+			[newItems[selectedIndex - 1], newItems[selectedIndex]] = [
+				newItems[selectedIndex]!,
+				newItems[selectedIndex - 1]!,
+			];
+			onChange(newItems);
+			setSelectedIndex(selectedIndex - 1);
+		}
+
+		// Move down (Shift+J)
+		if (input === 'J' && selectedIndex < items.length - 1) {
+			const newItems = [...items];
+			[newItems[selectedIndex], newItems[selectedIndex + 1]] = [
+				newItems[selectedIndex + 1]!,
+				newItems[selectedIndex]!,
+			];
+			onChange(newItems);
+			setSelectedIndex(selectedIndex + 1);
+		}
+
 		if (input === 'a') {
 			setMode('add');
 			setInputText('');
@@ -107,7 +129,7 @@ export default function ArrayRenderer({
 
 			{mode === 'list' && (
 				<Box marginTop={1}>
-					<Text dimColor>a=add d=delete enter=edit esc=cancel</Text>
+					<Text dimColor>a=add d=delete enter=edit K/J=move esc=done</Text>
 				</Box>
 			)}
 		</Box>

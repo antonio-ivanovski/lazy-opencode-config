@@ -184,6 +184,9 @@ function AppContent() {
 								onUndo={handleUndo}
 							/>
 						</Box>
+						<Box width={1} flexDirection="column">
+							<Text color="gray">│</Text>
+						</Box>
 						<Box width="40%" flexDirection="column">
 							<DetailsPanel
 								focusedNode={treeState.focusedNode}

@@ -24,17 +24,32 @@ export default function ConfirmDialog({
 		<Box
 			flexDirection="column"
 			borderStyle="round"
-			borderColor="yellow"
-			paddingX={2}
+			borderColor="#FF9800"
+			paddingX={3}
 			paddingY={1}
 		>
-			<Text color="yellow" bold>
-				{message}
+			<Text color="#FF9800" bold>
+				⚠ {message}
 			</Text>
 			<Text> </Text>
-			<Text>[Y]es — Save and quit</Text>
-			<Text>[N]o — Discard and quit</Text>
-			<Text>[C]ancel — Go back</Text>
+			<Box>
+				<Text color="#00BCD4" bold>
+					[Y]
+				</Text>
+				<Text dimColor>es — Save and quit</Text>
+			</Box>
+			<Box>
+				<Text color="#00BCD4" bold>
+					[N]
+				</Text>
+				<Text dimColor>o — Discard and quit</Text>
+			</Box>
+			<Box>
+				<Text color="#00BCD4" bold>
+					[C]
+				</Text>
+				<Text dimColor>ancel — Go back</Text>
+			</Box>
 		</Box>
 	);
 }

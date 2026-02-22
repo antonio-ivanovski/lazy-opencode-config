@@ -46,6 +46,7 @@ type ConfigContextValue = {
 	projectFilePath: string;
 	globalExists: boolean;
 	projectExists: boolean;
+	globalData: Record<string, unknown>;
 };
 
 // Helper: apply modifications to a data object (immutably)
@@ -191,11 +192,18 @@ export function ConfigProvider({
 		[currentState.data, currentState.modifications],
 	);
 
-	// Build tree
-	const tree = useMemo(
-		() => buildTree(schema, effectiveData),
-		[schema, effectiveData],
+	// Effective global data (always available, regardless of active scope)
+	const globalEffectiveData = useMemo(
+		() => applyModifications(globalState.data, globalState.modifications),
+		[globalState.data, globalState.modifications],
 	);
+
+	// Build tree
+	const tree = useMemo(() => {
+		const inherited =
+			activeScope === 'project' ? globalEffectiveData : undefined;
+		return buildTree(schema, effectiveData, inherited);
+	}, [schema, effectiveData, activeScope, globalEffectiveData]);
 
 	// Validation
 	const validationErrors = useMemo(() => {
@@ -292,6 +300,7 @@ export function ConfigProvider({
 		projectFilePath: projectState.filePath,
 		globalExists: globalState.exists || globalState.modifications.length > 0,
 		projectExists: projectState.exists || projectState.modifications.length > 0,
+		globalData: globalEffectiveData,
 	};
 
 	return React.createElement(
