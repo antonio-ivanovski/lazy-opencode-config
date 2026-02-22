@@ -1,0 +1,39 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install
+        run: bun install
+
+      - name: Build
+        run: bun run build --if-present
+
+      - name: Publish to npmjs
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bun publish --access public --registry https://registry.npmjs.org
+
+      - name: Publish to GitHub Packages
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun publish --access public
